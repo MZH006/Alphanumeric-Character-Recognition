@@ -12,6 +12,10 @@ from PIL import Image
 import torchvision.transforms as transforms
 from torchvision.datasets import EMNIST
 
+import cv2
+from PIL import ImageOps
+from scipy import ndimage
+
 model = DigitCNN()
 model.load_state_dict(torch.load("digit_model.pt"))
 model.eval()
@@ -26,25 +30,52 @@ def render_prediction(surface, prediction):
 
 
 def preprocess_and_predict(surface):
+
     data = pygame.surfarray.array3d(surface)
     grayscale = np.dot(data, [0.2989, 0.5870, 0.1140])
-    grayscale = np.transpose(grayscale)
+    grayscale = np.transpose(grayscale) 
 
-    image = Image.fromarray(grayscale).convert('L')
-    image = image.resize((28, 28), Image.Resampling.LANCZOS)
-    image = Image.eval(image, lambda x: 255 - x)
+    image = Image.fromarray(grayscale).convert("L")
+    image = ImageOps.invert(image)
 
+    image = image.point(lambda p: 255 if p > 50 else 0)
+
+    bbox = image.getbbox()
+    if bbox:
+        image = image.crop(bbox)
+
+    image = image.resize((20, 20), Image.Resampling.LANCZOS)
+
+    canvas = Image.new("L", (28, 28), color=0)
+    upper_left = ((28 - 20) // 2, (28 - 20) // 2)
+    canvas.paste(image, upper_left)
+
+    np_image = np.array(canvas)
+    cy, cx = ndimage.center_of_mass(np_image)
+    shift_x = int(round(14 - cx))
+    shift_y = int(round(14 - cy))
+    M = np.float32([[1, 0, shift_x], [0, 1, shift_y]])
+    np_image = cv2.warpAffine(np_image, M, (28, 28), borderValue=0)
+
+    final_image = Image.fromarray(np_image)
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.5,), (0.5,))
     ])
-    image_tensor = transform(image).unsqueeze(0)
+    tensor = transform(final_image).unsqueeze(0)
+
+    import matplotlib.pyplot as plt
+    plt.imshow(tensor.squeeze().numpy(), cmap="gray")
+    plt.title("Processed Image Going Into the Model")
+    plt.axis("off")
+    plt.show()
 
     with torch.no_grad():
-        output = model(image_tensor)
+        output = model(tensor)
         pred = torch.argmax(output, dim=1).item()
-    
+
     return pred
+
 
 running = True
 

@@ -41,10 +41,6 @@ def run_canvas():
                 last_pos = None
                 done_drawing = True 
 
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_c:
-                    screen.fill(BLACK)
-
         if drawing:
             x, y = pygame.mouse.get_pos()
             draw_brush((x, y))
