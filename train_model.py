@@ -18,7 +18,7 @@ test_transform = transforms.Compose([
 ])
 
 
-train_set = torchvision.datasets.EMNIST(root='./data', split='balanced', train=True, download=True, transform=train_transform)
+train_set = torchvision.datasets.EMNIST(root='./data', split='digits', train=True, download=True, transform=train_transform)
 train_loader = torch.utils.data.DataLoader(train_set, batch_size=64, shuffle=True)
 
 class DigitCNN(nn.Module):
@@ -36,7 +36,7 @@ class DigitCNN(nn.Module):
             nn.Flatten(),
             nn.Linear(64 * 5 * 5, 128),
             nn.ReLU(),
-            nn.Linear(128, 47)
+            nn.Linear(128, 10)
         )
 
     def forward(self, x):
@@ -51,7 +51,7 @@ if __name__ == "__main__":
     scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=2, verbose=True)
 
     best_test_acc = 0.0
-    epochs = 20
+    epochs = 5
     for epoch in range(epochs):
         total_loss = 0
         for images, labels in train_loader:
@@ -79,7 +79,7 @@ if __name__ == "__main__":
         torch.save(model.state_dict(), "digit_model.pt")
 
 
-    test_set = torchvision.datasets.EMNIST(root='./data', split='balanced', train=False, download=True, transform=test_transform)
+    test_set = torchvision.datasets.EMNIST(root='./data', split='digits', train=False, download=True, transform=test_transform)
     test_loader = torch.utils.data.DataLoader(test_set, batch_size=64, shuffle=False)
 
     model.eval()

@@ -11,16 +11,18 @@ import numpy as np
 from PIL import Image
 import torchvision.transforms as transforms
 from torchvision.datasets import EMNIST
+import torch.nn.functional as F
 
 import cv2
 from PIL import ImageOps
 from scipy import ndimage
+import matplotlib.pyplot as plt
 
 model = DigitCNN()
 model.load_state_dict(torch.load("digit_model.pt"))
 model.eval()
-emnist_data = EMNIST(root='./data', split='balanced', download=True)
-class_mapping = emnist_data.classes
+emnist_data = EMNIST(root='./data', split='digits', download=True)
+class_mapping = emnist_data.classes 
 
 
 def render_prediction(surface, prediction):
@@ -56,7 +58,13 @@ def preprocess_and_predict(surface):
     shift_y = int(round(14 - cy))
     M = np.float32([[1, 0, shift_x], [0, 1, shift_y]])
     np_image = cv2.warpAffine(np_image, M, (28, 28), borderValue=0)
+    
+    np_image = 255 - np_image
 
+    # Force white stroke and black background (binarize)
+    np_image[np_image < 100] = 0
+    np_image[np_image >= 100] = 255
+    
     final_image = Image.fromarray(np_image)
     transform = transforms.Compose([
         transforms.ToTensor(),
@@ -64,15 +72,25 @@ def preprocess_and_predict(surface):
     ])
     tensor = transform(final_image).unsqueeze(0)
 
-    import matplotlib.pyplot as plt
-    plt.imshow(tensor.squeeze().numpy(), cmap="gray")
-    plt.title("Processed Image Going Into the Model")
-    plt.axis("off")
+    emnist_digits = EMNIST(root='./data', split='digits', train=True, download=True)
+    zeros = [img for img, label in emnist_digits if label == 0][:1]  # one zero image
+
+    plt.subplot(1, 2, 1)
+    plt.imshow(tensor.squeeze().numpy(), cmap='gray')
+    plt.title("Your Drawn 0")
+
+    plt.subplot(1, 2, 2)
+    plt.imshow(np.array(zeros[0]), cmap='gray')
+    plt.title("EMNIST 0")
+
+    plt.tight_layout()
     plt.show()
 
     with torch.no_grad():
         output = model(tensor)
-        pred = torch.argmax(output, dim=1).item()
+        probs = F.softmax(output, dim=1)
+        print("Class Probabilities:", probs.squeeze().numpy())
+        pred = torch.argmax(probs, dim=1).item()
 
     return pred
 
