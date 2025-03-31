@@ -21,7 +21,7 @@ import time
 import os
 
 model = DigitCNN()
-model.load_state_dict(torch.load("digit_model.pt"))
+model.load_state_dict(torch.load("fine_tuned_digit_model.pt"))
 model.eval()
 emnist_data = EMNIST(root='./data', split='digits', download=True)
 class_mapping = emnist_data.classes 
