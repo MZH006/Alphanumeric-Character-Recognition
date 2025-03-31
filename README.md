@@ -18,7 +18,7 @@ It was trained on a combination of:
 
 ---
 
-## 🔢 How It Works
+## How It Works
 
 1. Run the program.
 2. Draw a digit (0–9) in the black square.
