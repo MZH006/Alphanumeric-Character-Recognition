@@ -8,7 +8,7 @@ pygame.font.init()
 font = pygame.font.SysFont("Arial", 24)
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFilter
 import torchvision.transforms as transforms
 from torchvision.datasets import EMNIST
 import torch.nn.functional as F
@@ -17,6 +17,8 @@ import cv2
 from PIL import ImageOps
 from scipy import ndimage
 import matplotlib.pyplot as plt
+import time
+import os
 
 model = DigitCNN()
 model.load_state_dict(torch.load("digit_model.pt"))
@@ -31,17 +33,16 @@ def render_prediction(surface, prediction):
     surface.blit(text_surface, (10, 5))
 
 
+fin_imag = None
 def preprocess_and_predict(surface):
-
+    global fin_imag
     data = pygame.surfarray.array3d(surface)
     grayscale = np.dot(data, [0.2989, 0.5870, 0.1140])
     grayscale = np.transpose(grayscale) 
 
     image = Image.fromarray(grayscale).convert("L")
     image = ImageOps.invert(image)
-
-    image = image.point(lambda p: 255 if p > 50 else 0)
-
+    image = image.filter(ImageFilter.GaussianBlur(radius=1))
     bbox = image.getbbox()
     if bbox:
         image = image.crop(bbox)
@@ -61,30 +62,24 @@ def preprocess_and_predict(surface):
     
     np_image = 255 - np_image
 
-    # Force white stroke and black background (binarize)
     np_image[np_image < 100] = 0
     np_image[np_image >= 100] = 255
     
     final_image = Image.fromarray(np_image)
+    fin_imag = final_image
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.5,), (0.5,))
     ])
     tensor = transform(final_image).unsqueeze(0)
 
-    emnist_digits = EMNIST(root='./data', split='digits', train=True, download=True)
-    zeros = [img for img, label in emnist_digits if label == 0][:1]  # one zero image
-
-    plt.subplot(1, 2, 1)
     plt.imshow(tensor.squeeze().numpy(), cmap='gray')
-    plt.title("Your Drawn 0")
-
-    plt.subplot(1, 2, 2)
-    plt.imshow(np.array(zeros[0]), cmap='gray')
-    plt.title("EMNIST 0")
-
-    plt.tight_layout()
+    plt.title("What the model sees")
+    plt.axis('off')
     plt.show()
+
+
+
 
     with torch.no_grad():
         output = model(tensor)
@@ -105,6 +100,7 @@ while running:
     render_prediction(surface, predicted_char)
     pygame.display.flip()
 
+    count = 0
     waiting = True
     while waiting:
         for event in pygame.event.get():
@@ -117,6 +113,56 @@ while running:
                 elif event.key == pygame.K_q:  
                     running = False
                     waiting = False
+                elif event.key == pygame.K_0:
+                    label = 0
+                    filename = f"{int(time.time())}"
+                    os.makedirs(f"my_digits/{label}", exist_ok=True)
+                    fin_imag.save(f"my_digits/{label}/{filename}.png")
+                elif event.key == pygame.K_1:
+                    label = 1
+                    filename = f"{int(time.time())}"
+                    os.makedirs(f"my_digits/{label}", exist_ok=True)
+                    fin_imag.save(f"my_digits/{label}/{filename}.png")
+                elif event.key == pygame.K_2:
+                    label = 2
+                    filename = f"{int(time.time())}"
+                    os.makedirs(f"my_digits/{label}", exist_ok=True)
+                    fin_imag.save(f"my_digits/{label}/{filename}.png")
+                elif event.key == pygame.K_3:
+                    label = 3
+                    filename = f"{int(time.time())}"
+                    os.makedirs(f"my_digits/{label}", exist_ok=True)
+                    fin_imag.save(f"my_digits/{label}/{filename}.png")
+                elif event.key == pygame.K_4:
+                    label = 4
+                    filename = f"{int(time.time())}"
+                    os.makedirs(f"my_digits/{label}", exist_ok=True)
+                    fin_imag.save(f"my_digits/{label}/{filename}.png")
+                elif event.key == pygame.K_5:
+                    label = 5
+                    filename = f"{int(time.time())}"
+                    os.makedirs(f"my_digits/{label}", exist_ok=True)
+                    fin_imag.save(f"my_digits/{label}/{filename}.png")
+                elif event.key == pygame.K_6:
+                    label = 6
+                    filename = f"{int(time.time())}"
+                    os.makedirs(f"my_digits/{label}", exist_ok=True)
+                    fin_imag.save(f"my_digits/{label}/{filename}.png")
+                elif event.key == pygame.K_7:
+                    label = 7
+                    filename = f"{int(time.time())}"
+                    os.makedirs(f"my_digits/{label}", exist_ok=True)
+                    fin_imag.save(f"my_digits/{label}/{filename}.png")
+                elif event.key == pygame.K_8:
+                    label = 8
+                    filename = f"{int(time.time())}"
+                    os.makedirs(f"my_digits/{label}", exist_ok=True)
+                    fin_imag.save(f"my_digits/{label}/{filename}.png")
+                elif event.key == pygame.K_9:
+                    label = 9
+                    filename = f"{int(time.time())}"
+                    os.makedirs(f"my_digits/{label}", exist_ok=True)
+                    fin_imag.save(f"my_digits/{label}/{filename}.png")
 
 pygame.quit()
 
